@@ -1,0 +1,153 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Breaker Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .button-group {
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            font-size: 14px;
+        }
+
+            button:hover {
+                background-color: #0056b3;
+            }
+
+        #results {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+
+        .health-info {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #e9ecef;
+        }
+
+        .success {
+            color: green;
+        }
+
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Circuit Breaker Test Interface</h1>
+
+        <div class="button-group">
+            <button onclick="testCircuitBreaker()">Test Circuit Breaker</button>
+            <button onclick="forceError()">Force Error</button>
+            <button onclick="checkHealth()">Check Health</button>
+            <button onclick="runMultipleTests()">Run Multiple Tests</button>
+        </div>
+
+        <div class="health-info">
+            <h3>Current Status:</h3>
+            <div id="healthInfo">Not checked yet</div>
+        </div>
+
+        <div id="results">
+            <h3>Test Results:</h3>
+            <div id="testResults"></div>
+        </div>
+    </div>
+
+    <script>
+        async function testCircuitBreaker() {
+            try {
+                const response = await fetch('/CircuitBreakerTest/test');
+                const data = await response.json();
+                appendResult('Test', data);
+            } catch (error) {
+                appendResult('Test', { error: error.message }, true);
+            }
+        }
+
+        async function forceError() {
+            try {
+                const response = await fetch('/CircuitBreakerTest/force-error');
+                const data = await response.json();
+                appendResult('Force Error', data);
+            } catch (error) {
+                appendResult('Force Error', { error: error.message }, true);
+            }
+        }
+
+        async function checkHealth() {
+            try {
+                const response = await fetch('/CircuitBreakerTest/health');
+                const data = await response.json();
+                document.getElementById('healthInfo').innerHTML = `
+                    //<p>Circuit State: <strong>${data.circuitState}</strong></p>
+                    //<p>Total Requests: ${data.metrics.totalRequests}</p>
+                    //<p>Error Percentage: ${data.metrics.errorPercentage}%</p>
+                    <p>Success Count: ${data.metrics.successCount}</p>
+                    <p>Failure Count: ${data.metrics.failureCount}</p>
+                    <p>Timeout Count: ${data.metrics.timeoutCount}</p>
+                `;
+            } catch (error) {
+                document.getElementById('healthInfo').innerHTML = `Error: ${error.message}`;
+            }
+        }
+
+        async function runMultipleTests() {
+            const testCount = 5;
+            for (let i = 0; i < testCount; i++) {
+                await testCircuitBreaker();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                await checkHealth();
+            }
+        }
+
+        function appendResult(type, data, isError = false) {
+            const resultDiv = document.getElementById('testResults');
+            const time = new Date().toLocaleTimeString();
+            const className = isError ? 'error' : 'success';
+
+            const result = document.createElement('div');
+            result.className = className;
+            result.innerHTML = `
+                <p><strong>${time} - ${type}:</strong></p>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+
+            resultDiv.insertBefore(result, resultDiv.firstChild);
+        }
+
+        // Initial health check
+        checkHealth();
+    </script>
+</body>
+</html>

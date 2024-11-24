@@ -1,0 +1,6 @@
+@SteeltoeCircuitBreakerDemo_HostAddress = http://localhost:5139
+
+GET {{SteeltoeCircuitBreakerDemo_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
